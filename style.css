@@ -496,3 +496,18 @@ body:has(.action-sheet:not(.hidden)) .fab {
     font-size: 15px;
   }
 }
+.private-mode-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.private-mode-label button {
+  width: auto;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #555;
+  color: #fff;
+  font-size: 12px;
+}
