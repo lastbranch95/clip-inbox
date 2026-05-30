@@ -992,18 +992,4 @@ URL
 ${clip.url}`
   );
 }
-if (currentFilter === "expired") {
 
-  const now = new Date();
-
-  clips = clips.filter((clip) => {
-
-    if (!clip.watchDueAt) {
-      return false;
-    }
-
-    return new Date(clip.watchDueAt) < now;
-
-  });
-
-}
