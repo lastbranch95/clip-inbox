@@ -14,10 +14,12 @@ const DEFAULT_PRIVATE_PASSCODE = "0908";
 window.addEventListener("load", async () => {
   db = await openDatabase();
 
-  document.getElementById("privateModeOffButton")
+  document
+    .getElementById("privateModeOffButton")
     .addEventListener("click", turnOffPrivateMode);
 
-  document.getElementById("pasteJsonButton")
+  document
+    .getElementById("pasteJsonButton")
     .addEventListener("click", importClipsFromPaste);
 
   document.getElementById("sortSelect").addEventListener("change", (event) => {
@@ -219,6 +221,7 @@ async function renderClips() {
     if (currentSort === "asc") {
       return new Date(a.createdAt) - new Date(b.createdAt);
     }
+
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
@@ -238,7 +241,10 @@ async function renderClips() {
     const now = new Date();
 
     clips = clips.filter((clip) => {
-      if (!clip.watchDueAt) return false;
+      if (!clip.watchDueAt) {
+        return false;
+      }
+
       return new Date(clip.watchDueAt) < now;
     });
   }
@@ -273,7 +279,7 @@ async function renderClips() {
     card.className = "clip-card";
 
     card.innerHTML = `
-      <a href="${escapeHtml(clip.url)}" target="_blank" rel="noopener noreferrer" onclick="countOnly(${clip.id})">
+      <a href="${escapeHtml(clip.url)}" target="_blank" rel="noopener noreferrer" onclick="countOnly(${clip.id}, true)">
         <img class="thumbnail" src="${clip.thumbnailUrl}" alt="thumbnail">
       </a>
 
@@ -349,11 +355,11 @@ async function renderTagOptions() {
 }
 
 function openAndCount(id, url) {
-  countOnly(id);
+  countOnly(id, true);
   window.open(url, "_blank");
 }
 
-async function countOnly(id) {
+async function countOnly(id, shouldRender = false) {
   const clip = await getClipById(id);
 
   clip.watchCount = (clip.watchCount || 0) + 1;
@@ -361,11 +367,14 @@ async function countOnly(id) {
   clip.watchStatus = "視聴済み";
 
   await updateClip(clip);
+
+  if (shouldRender) {
+    await renderClips();
+  }
 }
 
 async function markWatched(id) {
-  await countOnly(id);
-  await renderClips();
+  await countOnly(id, true);
 }
 
 async function setWatchDue(id) {
@@ -376,7 +385,9 @@ async function setWatchDue(id) {
     clip.watchDueType || "none"
   );
 
-  if (choice === null) return;
+  if (choice === null) {
+    return;
+  }
 
   const now = new Date();
   let dueAt = null;
@@ -414,14 +425,18 @@ async function editClip(id) {
     clip.reason || ""
   );
 
-  if (newReason === null) return;
+  if (newReason === null) {
+    return;
+  }
 
   const newTags = prompt(
     "タグを編集します。複数ならカンマ区切り。例：音楽, 創作, 勉強",
     clip.tags || ""
   );
 
-  if (newTags === null) return;
+  if (newTags === null) {
+    return;
+  }
 
   clip.reason = newReason;
   clip.tags = normalizeTags(newTags);
@@ -435,7 +450,9 @@ async function editClip(id) {
 function deleteClip(id) {
   const ok = confirm("削除する？");
 
-  if (!ok) return;
+  if (!ok) {
+    return;
+  }
 
   const transaction = db.transaction(STORE_NAME, "readwrite");
   const store = transaction.objectStore(STORE_NAME);
@@ -561,7 +578,9 @@ async function importClipArray(clips, completeMessage) {
 
   const ok = confirm(`${clips.length}件を読み込みます。追加保存でいい？`);
 
-  if (!ok) return;
+  if (!ok) {
+    return;
+  }
 
   for (const clip of clips) {
     await addClip(createImportedClip(clip));
@@ -603,7 +622,9 @@ async function copyJsonToClipboard() {
 async function importClips(event) {
   const file = event.target.files[0];
 
-  if (!file) return;
+  if (!file) {
+    return;
+  }
 
   let clips;
 
@@ -623,7 +644,9 @@ async function importClips(event) {
 async function importClipsFromPaste() {
   const text = prompt("JSONを貼り付け");
 
-  if (!text) return;
+  if (!text) {
+    return;
+  }
 
   let clips;
 
@@ -670,7 +693,9 @@ function getPrivatePasscode() {
 function changePrivatePasscode() {
   const current = prompt("現在のパスコードを入力");
 
-  if (current === null) return;
+  if (current === null) {
+    return;
+  }
 
   if (current !== getPrivatePasscode()) {
     alert("現在のパスコードが違います");
@@ -730,7 +755,9 @@ function turnOffPrivateMode() {
 }
 
 async function actionTogglePrivate() {
-  if (selectedClipId === null) return;
+  if (selectedClipId === null) {
+    return;
+  }
 
   const id = selectedClipId;
   closeActionSheet();
@@ -793,7 +820,7 @@ async function renderTodayPick(allClips) {
   section.innerHTML = `
     <div class="today-pick-label">今日の1本</div>
 
-    <a href="${escapeHtml(clip.url)}" target="_blank" rel="noopener noreferrer" onclick="countOnly(${clip.id})">
+    <a href="${escapeHtml(clip.url)}" target="_blank" rel="noopener noreferrer" onclick="countOnly(${clip.id}, true)">
       <img class="thumbnail" src="${clip.thumbnailUrl}" alt="thumbnail">
     </a>
 
@@ -840,12 +867,14 @@ function actionOpenClip() {
 
   closeActionSheet();
 
-  countOnly(id);
+  countOnly(id, true);
   window.open(url, "_blank");
 }
 
 async function actionMarkWatched() {
-  if (selectedClipId === null) return;
+  if (selectedClipId === null) {
+    return;
+  }
 
   const id = selectedClipId;
   closeActionSheet();
@@ -853,7 +882,9 @@ async function actionMarkWatched() {
 }
 
 async function actionSetWatchDue() {
-  if (selectedClipId === null) return;
+  if (selectedClipId === null) {
+    return;
+  }
 
   const id = selectedClipId;
   closeActionSheet();
@@ -861,7 +892,9 @@ async function actionSetWatchDue() {
 }
 
 async function actionEditClip() {
-  if (selectedClipId === null) return;
+  if (selectedClipId === null) {
+    return;
+  }
 
   const id = selectedClipId;
   closeActionSheet();
@@ -869,7 +902,9 @@ async function actionEditClip() {
 }
 
 async function actionDeleteClip() {
-  if (selectedClipId === null) return;
+  if (selectedClipId === null) {
+    return;
+  }
 
   const id = selectedClipId;
   closeActionSheet();
@@ -877,7 +912,9 @@ async function actionDeleteClip() {
 }
 
 async function actionShowDetail() {
-  if (selectedClipId === null) return;
+  if (selectedClipId === null) {
+    return;
+  }
 
   const clip = await getClipById(selectedClipId);
 
