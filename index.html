@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clip Inbox</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Clip Inbox</h1>
+    <p>サムネ付きURL捕獲箱</p>
+  </header>
+
+  <main>
+    <section class="save-box">
+      <input id="urlInput" type="url" placeholder="URLを貼る">
+      <input id="reasonInput" type="text" placeholder="保存理由：あとで見る / ネタ / 勉強">
+      <input id="tagInput" type="text" placeholder="タグ：動画, 創作, AWS など">
+      <button id="saveButton">保存</button>
+    </section>
+
+    <section class="search-box">
+      <input id="searchInput" type="text" placeholder="検索：タイトル / 理由 / タグ / URL">
+    </section>
+
+    <section class="backup-box">
+  <button id="exportButton">JSON書き出し</button>
+  <input id="importInput" type="file" accept="application/json" hidden>
+  <button id="importButton">JSON読み込み</button>
+</section>
+
+<section class="filter-box">
+  <button class="filter-button active" data-filter="all">全部</button>
+  <button class="filter-button" data-filter="unorganized">未整理</button>
+  <button class="filter-button" data-filter="organized">整理済み</button>
+</section>
+
+<section class="count-box">
+  <span id="countText">0件</span>
+</section>
+
+    <section id="clipList" class="clip-list"></section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
