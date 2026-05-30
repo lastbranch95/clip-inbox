@@ -44,9 +44,10 @@
     </section>
 
     <!-- Private表示中だけ出すラベル -->
-    <section id="privateModeLabel" class="private-mode-label hidden">
-      Private表示中
-    </section>
+  <section id="privateModeLabel" class="private-mode-label hidden">
+  <span>Private表示中</span>
+  <button id="privateModeOffButton">終了</button>
+</section>
 
     <!-- 設定パネル：普段は非表示 -->
     <section id="settingsPanel" class="settings-panel hidden">
@@ -57,6 +58,7 @@
 
       <input id="importInput" type="file" accept="application/json" hidden />
       <button id="importButton">JSON読み込み</button>
+      <button id="pasteJsonButton">JSON貼り付け読み込み</button>
 
       <button id="storageCheckButton">保存容量チェック</button>
       <p id="storageText"></p>
