@@ -2,48 +2,38 @@
   box-sizing: border-box;
 }
 
+html {
+  background: #111;
+}
+
 body {
-  margin: 0;
+  margin: 0 auto;
+  max-width: 480px;
+  min-height: 100vh;
+  padding-bottom: 110px;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: #111;
   color: #f5f5f5;
 }
 
-header {
-  padding: 20px 16px 12px;
-  background: #181818;
-  border-bottom: 1px solid #333;
+button,
+input,
+select {
+  font-family: inherit;
 }
 
-h1 {
-  margin: 0;
-  font-size: 28px;
+button {
+  border: none;
+  cursor: pointer;
 }
 
-header p {
-  margin: 6px 0 0;
-  color: #aaa;
-  font-size: 14px;
-}
-
-main {
-  padding: 16px;
-}
-
-.save-box,
-.search-box {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 18px;
-}
-
-input {
+input,
+select {
   width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  border: 1px solid #444;
-  background: #1d1d1d;
+  padding: 13px 14px;
+  border-radius: 16px;
+  border: 1px solid #333;
+  background: #1b1b1b;
   color: #fff;
   font-size: 16px;
 }
@@ -52,185 +42,290 @@ input::placeholder {
   color: #777;
 }
 
-button {
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  background: #4da3ff;
-  color: #fff;
-  font-size: 17px;
-  font-weight: bold;
+.hidden {
+  display: none !important;
 }
 
+/* ヘッダー */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #111;
+  border-bottom: 1px solid #222;
+}
+
+.logo-button {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 800;
+  text-align: left;
+}
+
+#countText {
+  flex: 0 0 auto;
+  margin: 0;
+  color: #aaa;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.header-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon-button {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-size: 23px;
+}
+
+/* 検索 */
+.search-panel {
+  position: sticky;
+  top: 72px;
+  z-index: 19;
+  padding: 12px 16px;
+  background: #111;
+  border-bottom: 1px solid #222;
+}
+
+/* Private中ラベル */
+.private-mode-label {
+  margin: 10px 16px 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #333;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* メイン */
+main {
+  padding: 0;
+}
+
+/* 今日の1本 */
+.today-pick {
+  margin: 12px 16px;
+  padding: 12px;
+  border-radius: 18px;
+  background: #1b1b1b;
+  border: 1px solid #333;
+}
+
+.today-pick-label {
+  margin-bottom: 8px;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.today-pick-title {
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.today-pick-reason {
+  margin-top: 6px;
+  color: #ddd;
+  font-size: 13px;
+}
+
+/* 状態フィルター */
+.filter-box {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 12px 16px 8px;
+  background: #111;
+  scrollbar-width: none;
+}
+
+.filter-box::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-button {
+  flex: 0 0 auto;
+  min-width: 82px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: #252525;
+  color: #eee;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.filter-button.active {
+  background: #fff;
+  color: #111;
+}
+
+/* 並び替え・タグ絞り込み */
+.control-box {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.control-box select {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: #1b1b1b;
+  color: #fff;
+  font-size: 14px;
+}
+
+/* 一覧 */
 .clip-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 0;
 }
 
 .clip-card {
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 16px;
+  background: #111;
+  border-bottom: 1px solid #222;
   overflow: hidden;
 }
 
 .thumbnail {
+  display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
-  background: #333;
+  background: #ddd;
 }
 
 .clip-body {
-  padding: 12px;
+  padding: 10px 14px 16px;
+}
+
+.clip-main-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .clip-title {
   font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 6px;
-  word-break: break-all;
+  line-height: 1.45;
+  font-weight: 800;
+  word-break: break-word;
 }
 
-.clip-url {
-  color: #8ecbff;
-  font-size: 13px;
-  word-break: break-all;
+.private-badge {
+  display: inline-block;
+  margin-left: 6px;
+  color: #aaa;
+  font-size: 12px;
 }
 
 .clip-meta {
-  margin-top: 8px;
-  font-size: 13px;
+  margin-top: 5px;
   color: #aaa;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .clip-reason {
   margin-top: 8px;
   font-size: 14px;
+  line-height: 1.5;
 }
 
-.clip-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
+.missing-reason {
+  color: #ff6b6b;
+  font-weight: 800;
 }
 
-.clip-actions button {
-  flex: 1;
-  font-size: 14px;
-  padding: 10px;
-}
-
-.delete-button {
-  background: #ff5c5c;
-}
-.filter-box {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.filter-button {
-  flex: 1;
-  padding: 10px;
-  font-size: 14px;
-  background: #2a2a2a;
-  color: #ddd;
-  border: 1px solid #444;
-}
-
-.filter-button.active {
-  background: #4da3ff;
-  color: #fff;
-  border-color: #4da3ff;
-}
-
-.count-box {
-  margin-bottom: 12px;
+.clip-tags {
+  margin-top: 6px;
   color: #aaa;
-  font-size: 14px;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
-.backup-box {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.backup-box button {
-  flex: 1;
-  background: #2a2a2a;
-  border: 1px solid #444;
-  font-size: 14px;
-  padding: 10px;
-}
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px 16px 12px;
-  background: #111;
-  border-bottom: 1px solid #333;
-}
-
-.app-header h1 {
-  font-size: 30px;
-}
-
-.icon-button {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  background: #222;
-  font-size: 22px;
-}
-
-.search-panel {
-  padding: 12px 16px;
-  background: #111;
-  border-bottom: 1px solid #333;
-}
-
-.hidden {
+.clip-url {
   display: none;
 }
 
+.menu-button {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-size: 25px;
+}
+
+/* 下の＋ボタン */
 .fab {
   position: fixed;
   left: 50%;
-  bottom: 22px;
+  bottom: calc(22px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  z-index: 20;
-  width: 64px;
-  height: 64px;
+  z-index: 80;
+  width: 58px;
+  height: 58px;
+  padding: 0;
   border-radius: 999px;
-  font-size: 34px;
   background: #333;
+  color: #fff;
+  font-size: 34px;
+  line-height: 1;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
+/* 入力・設定・メニュー表示中は＋を消す */
+body:has(.add-panel:not(.hidden)) .fab,
+body:has(.settings-panel:not(.hidden)) .fab,
+body:has(.action-sheet:not(.hidden)) .fab {
+  display: none !important;
+}
+
+/* 新規追加パネル */
 .add-panel {
   position: fixed;
   inset: 0;
-  z-index: 30;
-  background: rgba(0, 0, 0, 0.72);
+  z-index: 40;
   display: flex;
   align-items: flex-end;
-}
-
-.add-panel.hidden {
-  display: none;
+  background: rgba(0, 0, 0, 0.72);
 }
 
 .add-panel-inner {
   width: 100%;
-  padding: 18px 16px 24px;
-  background: #181818;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 18px 16px calc(24px + env(safe-area-inset-bottom));
   border-radius: 24px 24px 0 0;
+  background: #181818;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -240,207 +335,164 @@ button {
   margin: 0 0 4px;
 }
 
-.sub-button {
-  background: #333;
-}
-.clip-site {
-  display: inline-block;
-  margin-top: 8px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #2a2a2a;
-  color: #ddd;
-  font-size: 13px;
-  font-weight: bold;
-}
-
-.missing-reason {
-  color: #ff6b6b;
-  font-weight: bold;
-}
-.logo-button {
-  background: transparent;
-  padding: 0;
-  font-size: 30px;
-  font-weight: bold;
-  color: #fff;
-  text-align: left;
-}
-
-.filter-box {
+.private-check {
   display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding: 12px 0;
-  margin-bottom: 8px;
+  align-items: center;
+  gap: 8px;
+  color: #ddd;
+  font-size: 15px;
 }
 
-.filter-button {
-  flex: 0 0 auto;
-  border-radius: 999px;
-  padding: 10px 18px;
-  background: #252525;
-  color: #eee;
-  border: none;
+.private-check input {
+  width: auto;
 }
 
-.filter-button.active {
-  background: #fff;
-  color: #111;
+#saveButton {
+  padding: 14px;
+  border-radius: 14px;
+  background: #4da3ff;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
 }
 
+.sub-button {
+  padding: 14px;
+  border-radius: 14px;
+  background: #333;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* 設定パネル */
 .settings-panel {
   position: fixed;
   inset: 0;
-  z-index: 40;
-  background: #181818;
-  padding: 24px 16px;
+  z-index: 50;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 72px 16px calc(32px + env(safe-area-inset-bottom));
+  background: #111;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.settings-panel.hidden {
-  display: none;
-}
-
-.clip-main-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.menu-button {
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border-radius: 999px;
-  background: transparent;
+.settings-panel h2 {
+  margin: 0 0 8px;
   font-size: 28px;
-  color: #fff;
-}
-
-.clip-menu {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.clip-menu.hidden {
-  display: none;
-}
-
-.clip-menu button {
-  flex: 1;
-  padding: 10px;
-}
-
-.clip-url {
-  display: none;
-}
-body {
-  max-width: 480px;
-  margin: 0 auto;
-  padding-bottom: 90px;
-}
-
-.app-header {
-  height: 72px;
-  padding: 12px 16px;
-}
-
-.logo-button {
-  background: transparent;
-  font-size: 26px;
-  padding: 0;
-}
-
-.icon-button {
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  background: transparent;
-}
-
-.search-panel {
-  padding: 12px 16px;
-}
-
-.search-panel.hidden,
-.settings-panel.hidden,
-.add-panel.hidden {
-  display: none !important;
-}
-
-.settings-panel {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: #111;
-  padding: 80px 16px 24px;
 }
 
 .settings-panel button {
   width: 100%;
-  margin-bottom: 12px;
+  min-height: 48px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #2a2a2a;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
 }
 
-.filter-box {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding: 12px 16px;
-  margin: 0;
+.settings-panel #copyJsonButton,
+.settings-panel #exportButton,
+.settings-panel #importButton {
+  background: #4da3ff;
 }
 
-.filter-button {
-  flex: 0 0 auto;
-  width: auto;
-  min-width: 88px;
-  padding: 9px 16px;
-  border-radius: 999px;
+#storageText {
+  margin: 4px 0 12px;
+  color: #aaa;
   font-size: 14px;
+  line-height: 1.5;
 }
 
-.clip-card {
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-  margin-bottom: 10px;
+#closeSettingsButton {
+  position: sticky;
+  bottom: 0;
+  margin-top: 16px;
+  background: #333;
 }
 
-.clip-body {
-  padding: 10px 14px 14px;
-}
-
-.clip-title {
-  font-size: 15px;
-  line-height: 1.45;
-}
-
-.clip-meta {
-  font-size: 12px;
-}
-
-.clip-reason {
-  font-size: 13px;
-}
-
-.clip-menu {
-  display: none;
-}
-
-.clip-menu:not(.hidden) {
-  display: flex;
-}
-
-.fab {
+/* 三点メニュー */
+.action-sheet {
   position: fixed;
-  left: 50%;
-  bottom: 24px;
-  transform: translateX(-50%);
-  width: 58px;
-  height: 58px;
+  inset: 0;
+  z-index: 100;
+}
+
+.action-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.action-sheet-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 10px 18px calc(24px + env(safe-area-inset-bottom));
+  border-radius: 22px 22px 0 0;
+  background: #242424;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.action-sheet-handle {
+  width: 44px;
+  height: 5px;
   border-radius: 999px;
-  z-index: 80;
+  background: #777;
+  margin: 0 auto 8px;
+}
+
+.action-sheet-panel button {
+  width: 100%;
+  padding: 16px 8px;
+  border-radius: 0;
+  background: transparent;
+  color: #f5f5f5;
+  text-align: left;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.action-sheet-panel i {
+  margin-right: 10px;
+}
+
+.action-sheet-panel button.danger {
+  color: #ff6b6b;
+}
+
+/* 古い掘り返し下固定ボタンが残っていても無効化 */
+.rediscover-button {
+  display: none !important;
+}
+
+/* 小さい端末用 */
+@media (max-width: 360px) {
+  .logo-button {
+    font-size: 22px;
+  }
+
+  #countText {
+    font-size: 12px;
+  }
+
+  .filter-button {
+    min-width: 74px;
+    padding: 8px 13px;
+  }
+
+  .clip-title {
+    font-size: 15px;
+  }
 }
