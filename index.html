@@ -1,54 +1,167 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clip Inbox</title>
-  <link rel="stylesheet" href="style.css">
-</head>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<body>
-  <header class="app-header">
-    <button id="settingsButton" class="logo-button">Clip Inbox</button>
-    <p id="countText">0件</p>
-    <button id="searchToggleButton" class="icon-button">🔍</button>
-  </header>
+    <title>Clip Inbox</title>
 
-  <section id="searchPanel" class="search-panel hidden">
-    <input id="searchInput" type="text" placeholder="検索">
-  </section>
+    <link rel="stylesheet" href="style.css" />
 
-  <section id="settingsPanel" class="settings-panel hidden">
-    <h2>設定</h2>
-    <button id="exportButton">JSON書き出し</button>
-    <input id="importInput" type="file" accept="application/json" hidden>
-    <button id="importButton">JSON読み込み</button>
-    <button id="closeSettingsButton" class="sub-button">閉じる</button>
-  </section>
+    <!-- Bootstrap Icons：絵文字ではなく環境差の少ないアイコンを使う -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+  </head>
 
-  <main>
-    <section class="filter-box">
-      <button class="filter-button active" data-filter="all">すべて</button>
-      <button class="filter-button" data-filter="unorganized">未整理</button>
-      <button class="filter-button" data-filter="organized">整理済み</button>
+  <body>
+    <!-- 上部ヘッダー -->
+    <header class="app-header">
+      <!-- ここを押すと設定画面を開く -->
+      <button id="settingsButton" class="logo-button">Clip Inbox</button>
+
+      <!-- 未整理数 / 全体数を app.js から表示する -->
+      <p id="countText">0件</p>
+
+      <!-- ヘッダー右側の操作ボタン -->
+      <div class="header-actions">
+        <!-- 過去に保存した動画をランダムに掘り返す -->
+        <button id="rediscoverButton" class="icon-button" aria-label="掘り返す">
+          <i class="bi bi-shuffle"></i>
+        </button>
+
+        <!-- 検索欄の開閉ボタン -->
+        <button id="searchToggleButton" class="icon-button" aria-label="検索">
+          <i class="bi bi-search"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- 検索パネル：右上検索アイコンで開閉 -->
+    <section id="searchPanel" class="search-panel hidden">
+      <input id="searchInput" type="text" placeholder="検索" />
     </section>
 
-    <section id="clipList" class="clip-list"></section>
-  </main>
+    <!-- Private表示中だけ出すラベル -->
+    <section id="privateModeLabel" class="private-mode-label hidden">
+      Private表示中
+    </section>
 
-  <button id="addToggleButton" class="fab">＋</button>
+    <!-- 設定パネル：普段は非表示 -->
+    <section id="settingsPanel" class="settings-panel hidden">
+      <h2>設定</h2>
 
-  <section id="addPanel" class="add-panel hidden">
-    <div class="add-panel-inner">
-      <h2>新規追加</h2>
-      <input id="urlInput" type="url" placeholder="URLを貼る">
-      <input id="reasonInput" type="text" placeholder="保存理由">
-      <input id="tagInput" type="text" placeholder="タグ">
-      <button id="saveButton">保存</button>
-      <button id="closeAddButton" class="sub-button">閉じる</button>
-    </div>
-  </section>
+      <button id="copyJsonButton">JSONをコピー</button>
+      <button id="exportButton">JSON書き出し</button>
 
-  <script src="app.js"></script>
-</body>
+      <input id="importInput" type="file" accept="application/json" hidden />
+      <button id="importButton">JSON読み込み</button>
+
+      <button id="storageCheckButton">保存容量チェック</button>
+      <p id="storageText"></p>
+
+      <!-- Private関連 -->
+      <button id="privateModeButton">非表示クリップを表示</button>
+      <button id="changePasscodeButton">パスコード変更</button>
+
+      <button id="closeSettingsButton" class="sub-button">閉じる</button>
+    </section>
+
+    <main>
+      <!-- 今日の1本：app.js が自動で中身を入れる -->
+      <section id="todayPickSection" class="today-pick hidden"></section>
+
+      <!-- YouTube風フィルター -->
+      <section class="filter-box">
+        <button class="filter-button active" data-filter="all">すべて</button>
+        <button class="filter-button" data-filter="unorganized">未整理</button>
+        <button class="filter-button" data-filter="stale">放置</button>
+        <button class="filter-button" data-filter="watched">視聴済み</button>
+        <button class="filter-button" data-filter="expired">期限切れ</button>
+        <!-- Privateモード中だけ表示される -->
+        <button
+          id="privateFilterButton"
+          class="filter-button hidden"
+          data-filter="private"
+        >
+          非表示
+        </button>
+      </section>
+
+      <!-- 並び替え・タグ絞り込み -->
+      <section class="control-box">
+        <select id="sortSelect">
+          <option value="desc">新しい順</option>
+          <option value="asc">古い順</option>
+        </select>
+
+        <select id="labelSelect">
+          <option value="all">すべてのタグ</option>
+        </select>
+      </section>
+
+      <!-- クリップ一覧：app.js がカードを生成する -->
+      <section id="clipList" class="clip-list"></section>
+    </main>
+
+    <!-- 新規追加ボタン -->
+    <button id="addToggleButton" class="fab">＋</button>
+
+    <!-- 新規追加パネル -->
+    <section id="addPanel" class="add-panel hidden">
+      <div class="add-panel-inner">
+        <h2>新規追加</h2>
+
+        <input id="urlInput" type="url" placeholder="URLを貼る" />
+        <input id="reasonInput" type="text" placeholder="保存理由" />
+        <input id="tagInput" type="text" placeholder="タグ" />
+
+        <label class="private-check">
+          <input id="privateInput" type="checkbox" />
+          非表示クリップにする
+        </label>
+
+        <button id="saveButton">保存</button>
+        <button id="closeAddButton" class="sub-button">閉じる</button>
+      </div>
+    </section>
+
+    <!-- 三点メニュー：YouTube風の下から出る操作メニュー -->
+    <section id="actionSheet" class="action-sheet hidden">
+      <div class="action-sheet-backdrop" onclick="closeActionSheet()"></div>
+
+      <div class="action-sheet-panel">
+        <div class="action-sheet-handle"></div>
+
+        <button onclick="actionOpenClip()">
+          <i class="bi bi-play-circle"></i> 開く
+        </button>
+
+        <button onclick="actionShowDetail()">
+          <i class="bi bi-info-circle"></i> 詳細
+        </button>
+
+        <button onclick="actionSetWatchDue()">
+          <i class="bi bi-clock"></i> あとで見る期限
+        </button>
+
+        <button onclick="actionEditClip()">
+          <i class="bi bi-pencil"></i> 編集
+        </button>
+
+        <button onclick="actionTogglePrivate()">
+          <i class="bi bi-eye-slash"></i> 非表示切替
+        </button>
+
+        <button class="danger" onclick="actionDeleteClip()">
+          <i class="bi bi-trash"></i> 削除
+        </button>
+
+        <button onclick="closeActionSheet()">閉じる</button>
+      </div>
+    </section>
+
+    <script src="app.js"></script>
+  </body>
 </html>
