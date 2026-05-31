@@ -214,6 +214,60 @@
       </div>
     </section>
 
+    <!-- 詳細モーダル -->
+    <section id="detailModal" class="detail-modal hidden">
+      <div class="detail-backdrop" onclick="closeDetailModal()"></div>
+
+      <div class="detail-panel">
+        <div class="action-sheet-handle"></div>
+
+        <p class="detail-label">タイトル</p>
+        <h2 id="detailTitle" class="detail-title"></h2>
+
+        <div class="detail-grid">
+          <div>
+            <p class="detail-label">理由</p>
+            <p id="detailReason" class="detail-value"></p>
+          </div>
+
+          <div>
+            <p class="detail-label">タグ</p>
+            <p id="detailTags" class="detail-value"></p>
+          </div>
+
+          <div>
+            <p class="detail-label">視聴回数</p>
+            <p id="detailWatchCount" class="detail-value"></p>
+          </div>
+
+          <div>
+            <p class="detail-label">保存日</p>
+            <p id="detailCreatedAt" class="detail-value"></p>
+          </div>
+
+          <div>
+            <p class="detail-label">お気に入り</p>
+            <p id="detailFavorite" class="detail-value"></p>
+          </div>
+
+          <div>
+            <p class="detail-label">削除状態</p>
+            <p id="detailDeleted" class="detail-value"></p>
+          </div>
+        </div>
+
+        <p class="detail-label">URL</p>
+        <p id="detailUrl" class="detail-url"></p>
+
+        <div class="detail-actions">
+          <button onclick="actionCopyUrl()">URLコピー</button>
+          <button class="sub-button" onclick="closeDetailModal()">
+            閉じる
+          </button>
+        </div>
+      </div>
+    </section>
+
     <script src="app.js"></script>
   </body>
 </html>

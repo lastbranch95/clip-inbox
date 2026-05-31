@@ -1365,8 +1365,12 @@ async function actionShowDetail() {
 
   const clip = await getClipById(selectedClipId);
 
-  alert(
-    `タイトル
+  const detailModal = document.getElementById("detailModal");
+
+  // HTML側に詳細モーダルがない場合でも落ちないようにする。
+  if (!detailModal) {
+    alert(
+      `タイトル
 ${clip.title}
 
 理由
@@ -1381,12 +1385,46 @@ ${clip.watchCount || 0}
 保存日
 ${formatDate(clip.createdAt)}
 
+お気に入り
+${clip.isFavorite ? "はい" : "いいえ"}
+
 削除状態
 ${clip.isDeleted ? "ゴミ箱" : "通常"}
 
 URL
 ${clip.url}`
-  );
+    );
+    return;
+  }
+
+  document.getElementById("detailTitle").textContent =
+    clip.title || "タイトルなし";
+  document.getElementById("detailReason").textContent =
+    clip.reason || "なし";
+  document.getElementById("detailTags").textContent =
+    clip.tags || "なし";
+  document.getElementById("detailWatchCount").textContent =
+    `${clip.watchCount || 0}回`;
+  document.getElementById("detailCreatedAt").textContent =
+    formatDate(clip.createdAt);
+  document.getElementById("detailFavorite").textContent =
+    clip.isFavorite ? "はい" : "いいえ";
+  document.getElementById("detailDeleted").textContent =
+    clip.isDeleted ? "ゴミ箱" : "通常";
+  document.getElementById("detailUrl").textContent =
+    clip.url;
+
+  detailModal.classList.remove("hidden");
+}
+
+function closeDetailModal() {
+  const detailModal = document.getElementById("detailModal");
+
+  if (!detailModal) {
+    return;
+  }
+
+  detailModal.classList.add("hidden");
 }
 
 // ==================================================
