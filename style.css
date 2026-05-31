@@ -931,3 +931,109 @@ body:has(.search-panel:not(.hidden)) main {
     66px
   );
 }
+/* ==================================================
+   Private表示バー：固定ヘッダー下に正しく配置する
+================================================== */
+
+.private-mode-label {
+  position: fixed;
+  top: calc(
+    env(safe-area-inset-top) +
+    var(--app-header-height) +
+    var(--count-bar-height) +
+    10px
+  );
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 97;
+  width: calc(100% - 32px);
+  max-width: 448px;
+  margin: 0;
+}
+
+/* Private表示中は、Privateバーの高さぶん本文をさらに下げる */
+body:has(#privateModeLabel:not(.hidden)) main {
+  padding-top: calc(
+    env(safe-area-inset-top) +
+    var(--app-header-height) +
+    var(--count-bar-height) +
+    82px
+  );
+}
+
+/* 検索欄とPrivate表示が同時に出た場合 */
+body:has(#privateModeLabel:not(.hidden)):has(.search-panel:not(.hidden)) main {
+  padding-top: calc(
+    env(safe-area-inset-top) +
+    var(--app-header-height) +
+    var(--count-bar-height) +
+    82px +
+    66px
+  );
+}
+/* ==================================================
+   Private表示：ヘッダー内バッジ化
+================================================== */
+
+.header-left {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-left .logo-button {
+  flex: 0 1 auto;
+}
+
+.header-left .private-mode-label {
+  position: static;
+  transform: none;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 5px 7px 5px 9px;
+  border-radius: 999px;
+  background: #333;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.header-left .private-mode-label.hidden {
+  display: none !important;
+}
+
+.header-left .private-mode-label button {
+  width: auto;
+  min-height: 0;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #555;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+/* 以前のPrivateバー用に増やしていた余白を無効化 */
+body:has(#privateModeLabel:not(.hidden)) main {
+  padding-top: calc(
+    env(safe-area-inset-top) +
+    var(--app-header-height) +
+    var(--count-bar-height)
+  );
+}
+
+body:has(#privateModeLabel:not(.hidden)):has(.search-panel:not(.hidden)) main {
+  padding-top: calc(
+    env(safe-area-inset-top) +
+    var(--app-header-height) +
+    var(--count-bar-height) +
+    66px
+  );
+}
