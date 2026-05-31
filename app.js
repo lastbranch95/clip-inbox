@@ -14,56 +14,53 @@ const DEFAULT_PRIVATE_PASSCODE = "0908";
 window.addEventListener("load", async () => {
   db = await openDatabase();
 
-  document
-    .getElementById("privateModeOffButton")
-    .addEventListener("click", turnOffPrivateMode);
+  on("privateModeOffButton", "click", turnOffPrivateMode);
+  on("pasteJsonButton", "click", importClipsFromPaste);
+  on("refreshButton", "click", refreshApp);
+  on("resetAllButton", "click", resetAllData);
 
-  document
-    .getElementById("pasteJsonButton")
-    .addEventListener("click", importClipsFromPaste);
-
-  document.getElementById("sortSelect").addEventListener("change", (event) => {
+  on("sortSelect", "change", (event) => {
     currentSort = event.target.value;
     renderClips();
   });
 
-  document.getElementById("labelSelect").addEventListener("change", (event) => {
+  on("labelSelect", "change", (event) => {
     currentLabel = event.target.value;
     renderClips();
   });
 
-  document.getElementById("saveButton").addEventListener("click", saveClip);
-  document.getElementById("searchInput").addEventListener("input", renderClips);
-  document.getElementById("exportButton").addEventListener("click", exportClips);
-  document.getElementById("copyJsonButton").addEventListener("click", copyJsonToClipboard);
-  document.getElementById("storageCheckButton").addEventListener("click", checkStorage);
+  on("saveButton", "click", saveClip);
+  on("searchInput", "input", renderClips);
+  on("exportButton", "click", exportClips);
+  on("copyJsonButton", "click", copyJsonToClipboard);
+  on("storageCheckButton", "click", checkStorage);
 
-  document.getElementById("importButton").addEventListener("click", () => {
+  on("importButton", "click", () => {
     document.getElementById("importInput").click();
   });
 
-  document.getElementById("importInput").addEventListener("change", importClips);
-  document.getElementById("rediscoverButton").addEventListener("click", rediscoverRandomClip);
-  document.getElementById("privateModeButton").addEventListener("click", togglePrivateMode);
-  document.getElementById("changePasscodeButton").addEventListener("click", changePrivatePasscode);
+  on("importInput", "change", importClips);
+  on("rediscoverButton", "click", rediscoverRandomClip);
+  on("privateModeButton", "click", togglePrivateMode);
+  on("changePasscodeButton", "click", changePrivatePasscode);
 
-  document.getElementById("settingsButton").addEventListener("click", () => {
+  on("settingsButton", "click", () => {
     document.getElementById("settingsPanel").classList.remove("hidden");
   });
 
-  document.getElementById("closeSettingsButton").addEventListener("click", () => {
+  on("closeSettingsButton", "click", () => {
     document.getElementById("settingsPanel").classList.add("hidden");
   });
 
-  document.getElementById("searchToggleButton").addEventListener("click", () => {
+  on("searchToggleButton", "click", () => {
     document.getElementById("searchPanel").classList.toggle("hidden");
   });
 
-  document.getElementById("addToggleButton").addEventListener("click", () => {
+  on("addToggleButton", "click", () => {
     document.getElementById("addPanel").classList.remove("hidden");
   });
 
-  document.getElementById("closeAddButton").addEventListener("click", () => {
+  on("closeAddButton", "click", () => {
     document.getElementById("addPanel").classList.add("hidden");
   });
 
@@ -80,9 +77,23 @@ window.addEventListener("load", async () => {
     });
   });
 
+  await refreshApp();
+});
+
+function on(id, eventName, handler) {
+  const element = document.getElementById(id);
+
+  if (!element) {
+    return;
+  }
+
+  element.addEventListener(eventName, handler);
+}
+
+async function refreshApp() {
   await renderTagOptions();
   await renderClips();
-});
+}
 
 function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -150,6 +161,17 @@ function updateClip(clip) {
   });
 }
 
+function hardDeleteClip(id) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.delete(id);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
 async function saveClip() {
   const url = document.getElementById("urlInput").value.trim();
   const reason = document.getElementById("reasonInput").value.trim();
@@ -162,7 +184,7 @@ async function saveClip() {
   }
 
   const allClips = await getAllClips();
-  const exists = allClips.some((clip) => clip.url === url);
+  const exists = allClips.some((clip) => clip.url === url && !clip.isDeleted);
 
   if (exists) {
     alert("すでに保存済みです");
@@ -179,6 +201,8 @@ async function saveClip() {
     tags,
     status: reason ? "整理済み" : "未整理",
     isPrivate,
+    isDeleted: false,
+    deletedAt: null,
     watchStatus: "あとで見る",
     watchCount: 0,
     lastWatchedAt: null,
@@ -195,8 +219,7 @@ async function saveClip() {
   document.getElementById("privateInput").checked = false;
   document.getElementById("addPanel").classList.add("hidden");
 
-  await renderTagOptions();
-  await renderClips();
+  await refreshApp();
 }
 
 async function renderClips() {
@@ -209,6 +232,14 @@ async function renderClips() {
   let clips = await getAllClips();
 
   renderTodayPick(clips);
+
+  if (currentFilter !== "trash") {
+    clips = clips.filter((clip) => !clip.isDeleted);
+  }
+
+  if (currentFilter === "trash") {
+    clips = clips.filter((clip) => clip.isDeleted);
+  }
 
   if (!privateMode) {
     clips = clips.filter((clip) => !clip.isPrivate);
@@ -239,18 +270,15 @@ async function renderClips() {
 
   if (currentFilter === "expired") {
     const now = new Date();
-
-    clips = clips.filter((clip) => {
-      if (!clip.watchDueAt) {
-        return false;
-      }
-
-      return new Date(clip.watchDueAt) < now;
-    });
+    clips = clips.filter((clip) => clip.watchDueAt && new Date(clip.watchDueAt) < now);
   }
 
   if (currentFilter === "private") {
     clips = clips.filter((clip) => clip.isPrivate);
+  }
+
+  if (currentFilter === "tagless") {
+    clips = clips.filter((clip) => getTagArray(clip.tags).length === 0);
   }
 
   if (currentLabel !== "all") {
@@ -289,6 +317,7 @@ async function renderClips() {
             <div class="clip-title">
               ${escapeHtml(clip.title)}
               ${clip.isPrivate && privateMode ? '<span class="private-badge">非表示</span>' : ""}
+              ${clip.isDeleted ? '<span class="private-badge">ゴミ箱</span>' : ""}
             </div>
 
             <div class="clip-meta">
@@ -337,9 +366,11 @@ async function renderTagOptions() {
   const clips = await getAllClips();
   const tagSet = new Set();
 
-  clips.forEach((clip) => {
-    getTagArray(clip.tags).forEach((tag) => tagSet.add(tag));
-  });
+  clips
+    .filter((clip) => !clip.isDeleted)
+    .forEach((clip) => {
+      getTagArray(clip.tags).forEach((tag) => tagSet.add(tag));
+    });
 
   select.innerHTML = `<option value="all">すべてのタグ</option>`;
 
@@ -443,25 +474,93 @@ async function editClip(id) {
   clip.status = newReason.trim() === "" ? "未整理" : "整理済み";
 
   await updateClip(clip);
-  await renderTagOptions();
-  await renderClips();
+  await refreshApp();
 }
 
-function deleteClip(id) {
-  const ok = confirm("削除する？");
+async function deleteClip(id) {
+  const ok = confirm("ゴミ箱に移動する？");
 
   if (!ok) {
     return;
   }
 
-  const transaction = db.transaction(STORE_NAME, "readwrite");
-  const store = transaction.objectStore(STORE_NAME);
+  const clip = await getClipById(id);
 
-  store.delete(id);
-  transaction.oncomplete = async () => {
-    await renderTagOptions();
-    await renderClips();
-  };
+  clip.isDeleted = true;
+  clip.deletedAt = new Date().toISOString();
+
+  await updateClip(clip);
+  await refreshApp();
+}
+
+async function actionRestoreClip() {
+  if (selectedClipId === null) {
+    return;
+  }
+
+  const id = selectedClipId;
+  closeActionSheet();
+
+  const clip = await getClipById(id);
+  clip.isDeleted = false;
+  clip.deletedAt = null;
+
+  await updateClip(clip);
+  await refreshApp();
+}
+
+async function actionHardDeleteClip() {
+  if (selectedClipId === null) {
+    return;
+  }
+
+  const ok = confirm("完全に削除します。戻せません。");
+
+  if (!ok) {
+    return;
+  }
+
+  const id = selectedClipId;
+  closeActionSheet();
+
+  await hardDeleteClip(id);
+  await refreshApp();
+}
+
+async function actionCopyUrl() {
+  if (selectedClipId === null) {
+    return;
+  }
+
+  const clip = await getClipById(selectedClipId);
+
+  try {
+    await navigator.clipboard.writeText(clip.url);
+    alert("URLをコピーしました");
+  } catch {
+    prompt("手動でコピー", clip.url);
+  }
+}
+
+async function actionEditTitle() {
+  if (selectedClipId === null) {
+    return;
+  }
+
+  const id = selectedClipId;
+  closeActionSheet();
+
+  const clip = await getClipById(id);
+  const newTitle = prompt("タイトルを編集", clip.title || "");
+
+  if (newTitle === null) {
+    return;
+  }
+
+  clip.title = newTitle.trim() || clip.title;
+
+  await updateClip(clip);
+  await renderClips();
 }
 
 function createThumbnailUrl(url) {
@@ -561,6 +660,8 @@ function createImportedClip(clip) {
     tags: normalizeTags(clip.tags || ""),
     status: clip.status || "未整理",
     isPrivate: clip.isPrivate || false,
+    isDeleted: clip.isDeleted || false,
+    deletedAt: clip.deletedAt || null,
     watchStatus: clip.watchStatus || "あとで見る",
     watchCount: clip.watchCount || 0,
     lastWatchedAt: clip.lastWatchedAt || null,
@@ -576,20 +677,32 @@ async function importClipArray(clips, completeMessage) {
     return;
   }
 
-  const ok = confirm(`${clips.length}件を読み込みます。追加保存でいい？`);
+  const ok = confirm(`${clips.length}件を読み込みます。重複URLはスキップします。`);
 
   if (!ok) {
     return;
   }
 
+  const existingClips = await getAllClips();
+  const existingUrls = new Set(existingClips.map((clip) => clip.url));
+
+  let importedCount = 0;
+  let skippedCount = 0;
+
   for (const clip of clips) {
+    if (existingUrls.has(clip.url)) {
+      skippedCount++;
+      continue;
+    }
+
     await addClip(createImportedClip(clip));
+    existingUrls.add(clip.url);
+    importedCount++;
   }
 
-  await renderTagOptions();
-  await renderClips();
+  await refreshApp();
 
-  alert(completeMessage);
+  alert(`${completeMessage}\n追加：${importedCount}件\n重複スキップ：${skippedCount}件`);
 }
 
 async function exportClips() {
@@ -684,6 +797,28 @@ async function checkStorage() {
 
   document.getElementById("storageText").textContent =
     `使用量：${usageMB}MB / 上限目安：${quotaMB}MB / 使用率：${percent}%`;
+}
+
+async function resetAllData() {
+  const ok1 = confirm("全データを削除します。JSONバックアップ済みですか？");
+  if (!ok1) {
+    return;
+  }
+
+  const ok2 = confirm("本当に削除します。この操作は戻せません。");
+  if (!ok2) {
+    return;
+  }
+
+  const transaction = db.transaction(STORE_NAME, "readwrite");
+  const store = transaction.objectStore(STORE_NAME);
+
+  store.clear();
+
+  transaction.oncomplete = async () => {
+    await refreshApp();
+    alert("全データを削除しました");
+  };
 }
 
 function getPrivatePasscode() {
@@ -784,7 +919,7 @@ function isStaleClip(clip) {
 function pickRediscoveryClip(clips) {
   const visibleClips = privateMode
     ? clips
-    : clips.filter((clip) => !clip.isPrivate);
+    : clips.filter((clip) => !clip.isPrivate && !clip.isDeleted);
 
   const candidates = visibleClips.filter((clip) => {
     return (
@@ -908,7 +1043,7 @@ async function actionDeleteClip() {
 
   const id = selectedClipId;
   closeActionSheet();
-  deleteClip(id);
+  await deleteClip(id);
 }
 
 async function actionShowDetail() {
@@ -933,6 +1068,9 @@ ${clip.watchCount || 0}
 
 保存日
 ${formatDate(clip.createdAt)}
+
+削除状態
+${clip.isDeleted ? "ゴミ箱" : "通常"}
 
 URL
 ${clip.url}`

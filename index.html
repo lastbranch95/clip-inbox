@@ -31,6 +31,10 @@
           <i class="bi bi-shuffle"></i>
         </button>
 
+        <button id="refreshButton" class="icon-button" aria-label="更新">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+
         <!-- 検索欄の開閉ボタン -->
         <button id="searchToggleButton" class="icon-button" aria-label="検索">
           <i class="bi bi-search"></i>
@@ -44,15 +48,14 @@
     </section>
 
     <!-- Private表示中だけ出すラベル -->
-  <section id="privateModeLabel" class="private-mode-label hidden">
-  <span>Private表示中</span>
-  <button id="privateModeOffButton">終了</button>
-</section>
+    <section id="privateModeLabel" class="private-mode-label hidden">
+      <span>Private表示中</span>
+      <button id="privateModeOffButton">終了</button>
+    </section>
 
     <!-- 設定パネル：普段は非表示 -->
     <section id="settingsPanel" class="settings-panel hidden">
       <h2>設定</h2>
-
       <button id="copyJsonButton">JSONをコピー</button>
       <button id="exportButton">JSON書き出し</button>
 
@@ -66,7 +69,7 @@
       <!-- Private関連 -->
       <button id="privateModeButton">非表示クリップを表示</button>
       <button id="changePasscodeButton">パスコード変更</button>
-
+      <button id="resetAllButton">アプリ内データ全削除</button>
       <button id="closeSettingsButton" class="sub-button">閉じる</button>
     </section>
 
@@ -81,6 +84,9 @@
         <button class="filter-button" data-filter="stale">放置</button>
         <button class="filter-button" data-filter="watched">視聴済み</button>
         <button class="filter-button" data-filter="expired">期限切れ</button>
+        <button class="filter-button" data-filter="tagless">タグなし</button>
+        <button class="filter-button" data-filter="trash">ゴミ箱</button>
+
         <!-- Privateモード中だけ表示される -->
         <button
           id="privateFilterButton"
@@ -158,6 +164,22 @@
 
         <button class="danger" onclick="actionDeleteClip()">
           <i class="bi bi-trash"></i> 削除
+        </button>
+
+        <button onclick="actionCopyUrl()">
+          <i class="bi bi-link-45deg"></i> URLコピー
+        </button>
+
+        <button onclick="actionEditTitle()">
+          <i class="bi bi-type"></i> タイトル編集
+        </button>
+
+        <button onclick="actionRestoreClip()">
+          <i class="bi bi-arrow-counterclockwise"></i> 復元
+        </button>
+
+        <button class="danger" onclick="actionHardDeleteClip()">
+          <i class="bi bi-x-circle"></i> 完全削除
         </button>
 
         <button onclick="closeActionSheet()">閉じる</button>
