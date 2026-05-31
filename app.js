@@ -1,3 +1,11 @@
+// ==================================================
+// Clip Inbox
+// URLクリップをブラウザ内 IndexedDB に保存するアプリ。
+// 役割：
+// - IndexedDB：クリップデータの保存場所
+// - app.js：保存、表示、検索、JSONバックアップ、Private表示などの処理を書く場所
+// ==================================================
+
 const DB_NAME = "clipInboxDb";
 const STORE_NAME = "clips";
 
@@ -11,9 +19,13 @@ let currentLabel = "all";
 
 const DEFAULT_PRIVATE_PASSCODE = "0908";
 
+// ==================================================
+// 初期化：画面読み込み後にDBを開き、各ボタンへイベントを登録する
+// ==================================================
 window.addEventListener("load", async () => {
   db = await openDatabase();
 
+  // 設定・JSONバックアップ関連
   on("privateModeOffButton", "click", turnOffPrivateMode);
   on("pasteJsonButton", "click", importClipsFromPaste);
   on("refreshButton", "click", refreshApp);
@@ -33,6 +45,17 @@ window.addEventListener("load", async () => {
   on("searchInput", "input", renderClips);
   on("exportButton", "click", exportClips);
   on("copyJsonButton", "click", copyJsonToClipboard);
+
+  // JSON出力パネル関連
+  // スマホで巨大JSONを prompt に出すと1行地獄になるため、
+  // textarea表示・全選択・ファイル保存・共有を用意する。
+  on("selectJsonButton", "click", selectJsonText);
+  on("downloadJsonButton", "click", downloadJsonFromOutput);
+  on("shareJsonButton", "click", shareJsonFile);
+  on("closeJsonOutputButton", "click", () => {
+    document.getElementById("jsonOutputPanel").classList.add("hidden");
+  });
+
   on("storageCheckButton", "click", checkStorage);
 
   on("importButton", "click", () => {
@@ -80,6 +103,9 @@ window.addEventListener("load", async () => {
   await refreshApp();
 });
 
+// ==================================================
+// 共通ヘルパー：存在する要素にだけイベントを登録する
+// ==================================================
 function on(id, eventName, handler) {
   const element = document.getElementById(id);
 
@@ -95,6 +121,9 @@ async function refreshApp() {
   await renderClips();
 }
 
+// ==================================================
+// IndexedDB操作
+// ==================================================
 function openDatabase() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, 1);
@@ -172,6 +201,9 @@ function hardDeleteClip(id) {
   });
 }
 
+// ==================================================
+// 新規保存
+// ==================================================
 async function saveClip() {
   const url = document.getElementById("urlInput").value.trim();
   const reason = document.getElementById("reasonInput").value.trim();
@@ -184,6 +216,9 @@ async function saveClip() {
   }
 
   const allClips = await getAllClips();
+
+  // 同じURLが通常一覧にある場合は重複保存しない。
+  // ゴミ箱にあるものは再保存できるように、!clip.isDeleted を条件にしている。
   const exists = allClips.some((clip) => clip.url === url && !clip.isDeleted);
 
   if (exists) {
@@ -222,6 +257,9 @@ async function saveClip() {
   await refreshApp();
 }
 
+// ==================================================
+// 一覧表示・検索・フィルター・並び替え
+// ==================================================
 async function renderClips() {
   const listElement = document.getElementById("clipList");
   const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
@@ -344,6 +382,9 @@ async function renderClips() {
   });
 }
 
+// ==================================================
+// タグ処理
+// ==================================================
 function normalizeTags(text) {
   return (text || "")
     .split(",")
@@ -385,6 +426,9 @@ async function renderTagOptions() {
   currentLabel = select.value;
 }
 
+// ==================================================
+// 視聴回数・あとで見る期限
+// ==================================================
 function openAndCount(id, url) {
   countOnly(id, true);
   window.open(url, "_blank");
@@ -448,6 +492,9 @@ async function setWatchDue(id) {
   await renderClips();
 }
 
+// ==================================================
+// 編集・削除・復元
+// ==================================================
 async function editClip(id) {
   const clip = await getClipById(id);
 
@@ -563,6 +610,9 @@ async function actionEditTitle() {
   await renderClips();
 }
 
+// ==================================================
+// URL解析・サムネイル・タイトル取得
+// ==================================================
 function createThumbnailUrl(url) {
   const youtubeId = extractYouTubeId(url);
 
@@ -651,6 +701,9 @@ function getSiteName(url) {
   }
 }
 
+// ==================================================
+// JSON読み込み・書き出し・バックアップ
+// ==================================================
 function createImportedClip(clip) {
   return {
     url: clip.url || "",
@@ -705,31 +758,116 @@ async function importClipArray(clips, completeMessage) {
   alert(`${completeMessage}\n追加：${importedCount}件\n重複スキップ：${skippedCount}件`);
 }
 
-async function exportClips() {
+async function createClipsJson() {
   const clips = await getAllClips();
-  const json = JSON.stringify(clips, null, 2);
+  return JSON.stringify(clips, null, 2);
+}
 
+function getJsonFileName() {
+  return `clip-inbox-${new Date().toISOString().slice(0, 10)}.json`;
+}
+
+function downloadJsonText(json) {
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
 
   const link = document.createElement("a");
   link.href = url;
-  link.download = `clip-inbox-${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = getJsonFileName();
   link.click();
 
   URL.revokeObjectURL(url);
 }
 
+function showJsonOutput(json, message) {
+  const panel = document.getElementById("jsonOutputPanel");
+  const area = document.getElementById("jsonOutputArea");
+  const messageElement = document.getElementById("jsonOutputMessage");
+
+  // HTML側のJSON出力パネルがまだ無い場合に落ちないようにする。
+  // ただしスマホのprompt地獄を避けるため、巨大JSONのprompt表示はしない。
+  if (!panel || !area || !messageElement) {
+    alert(`${message}\nJSON出力パネルがHTML側にないため、ファイル保存も試してください。`);
+    return;
+  }
+
+  area.value = json;
+  messageElement.textContent = message;
+  panel.classList.remove("hidden");
+
+  selectJsonText();
+}
+
+function selectJsonText() {
+  const area = document.getElementById("jsonOutputArea");
+
+  if (!area) {
+    return;
+  }
+
+  area.focus();
+  area.select();
+  area.setSelectionRange(0, area.value.length);
+}
+
+async function exportClips() {
+  const json = await createClipsJson();
+
+  // ファイルとして保存する従来の動き。
+  downloadJsonText(json);
+}
+
 async function copyJsonToClipboard() {
-  const clips = await getAllClips();
-  const json = JSON.stringify(clips, null, 2);
+  const json = await createClipsJson();
 
   try {
     await navigator.clipboard.writeText(json);
-    alert("JSONをコピーしました");
+    showJsonOutput(
+      json,
+      "JSONをコピーしました。必要なら下の欄から再コピーできます。"
+    );
   } catch {
-    prompt("コピーできない場合は手動でコピー", json);
+    showJsonOutput(
+      json,
+      "自動コピーできませんでした。下の欄を全選択してコピーしてください。"
+    );
   }
+}
+
+function downloadJsonFromOutput() {
+  const area = document.getElementById("jsonOutputArea");
+  const json = area ? area.value : "";
+
+  if (!json) {
+    alert("保存するJSONがありません");
+    return;
+  }
+
+  downloadJsonText(json);
+}
+
+async function shareJsonFile() {
+  const area = document.getElementById("jsonOutputArea");
+  const json = area ? area.value : "";
+
+  if (!json) {
+    alert("共有するJSONがありません");
+    return;
+  }
+
+  const file = new File([json], getJsonFileName(), {
+    type: "application/json"
+  });
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({
+      files: [file],
+      title: "Clip Inbox JSON Backup"
+    });
+    return;
+  }
+
+  alert("このブラウザではファイル共有に対応していません。ファイル保存を使ってください。");
 }
 
 async function importClips(event) {
@@ -821,6 +959,9 @@ async function resetAllData() {
   };
 }
 
+// ==================================================
+// Privateモード
+// ==================================================
 function getPrivatePasscode() {
   return localStorage.getItem("privatePasscode") || DEFAULT_PRIVATE_PASSCODE;
 }
@@ -904,6 +1045,9 @@ async function actionTogglePrivate() {
   await renderClips();
 }
 
+// ==================================================
+// 掘り返し・今日の1本
+// ==================================================
 function isStaleClip(clip) {
   if ((clip.watchCount || 0) > 0) {
     return false;
@@ -980,6 +1124,9 @@ async function rediscoverRandomClip() {
   openActionSheet(clip.id, clip.url);
 }
 
+// ==================================================
+// 三点メニュー
+// ==================================================
 function openActionSheet(id, url) {
   selectedClipId = id;
   selectedClipUrl = url;
@@ -1077,6 +1224,9 @@ ${clip.url}`
   );
 }
 
+// ==================================================
+// 表示用ユーティリティ
+// ==================================================
 function getDaysSince(isoString) {
   const date = new Date(isoString);
   const now = new Date();

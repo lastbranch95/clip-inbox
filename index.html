@@ -11,7 +11,7 @@
     <meta name="theme-color" content="#111111" />
 
     <link rel="stylesheet" href="style.css" />
-    
+
     <!-- Bootstrap Icons：絵文字ではなく環境差の少ないアイコンを使う -->
     <link
       rel="stylesheet"
@@ -66,6 +66,23 @@
       <input id="importInput" type="file" accept="application/json" hidden />
       <button id="importButton">JSON読み込み</button>
       <button id="pasteJsonButton">JSON貼り付け読み込み</button>
+
+      <section id="jsonOutputPanel" class="json-output-panel hidden">
+        <h3>JSONバックアップ</h3>
+
+        <p id="jsonOutputMessage" class="json-output-message">
+          下の欄を全選択してコピーできます。
+        </p>
+
+        <textarea id="jsonOutputArea" readonly></textarea>
+
+        <div class="json-output-actions">
+          <button id="selectJsonButton">全選択</button>
+          <button id="downloadJsonButton">ファイル保存</button>
+          <button id="shareJsonButton">共有</button>
+          <button id="closeJsonOutputButton" class="sub-button">閉じる</button>
+        </div>
+      </section>
 
       <button id="storageCheckButton">保存容量チェック</button>
       <p id="storageText"></p>
