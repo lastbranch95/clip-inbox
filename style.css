@@ -399,7 +399,8 @@ body:has(.action-sheet:not(.hidden)) .fab {
 
 .settings-panel #copyJsonButton,
 .settings-panel #exportButton,
-.settings-panel #importButton {
+.settings-panel #importButton,
+.settings-panel #pasteJsonButton {
   background: #4da3ff;
 }
 
@@ -624,4 +625,143 @@ button,
   to {
     transform: rotate(360deg);
   }
+}
+/* 三点メニュー：通常時/ゴミ箱時で出す項目を分ける */
+.action-sheet .trash-only {
+  display: none;
+}
+
+.action-sheet.trash-mode .normal-only {
+  display: none;
+}
+
+.action-sheet.trash-mode .trash-only {
+  display: block;
+}
+/* ヘッダー左上ロゴ：YouTube風にアイコン＋横文字 */
+.logo-button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.header-logo-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #0b0b0d;
+  box-shadow: 0 0 0 1px #333;
+}
+
+.header-logo-text {
+  color: #fff;
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+/* ヘッダー詰まり対策：件数表示を別段に逃がす */
+.app-header {
+  height: 66px;
+  gap: 10px;
+}
+
+.logo-button {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.header-logo-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-actions {
+  gap: 4px;
+}
+
+.icon-button {
+  flex: 0 0 auto;
+}
+
+.count-bar {
+  position: sticky;
+  top: 66px;
+  z-index: 18;
+  padding: 4px 16px 8px;
+  background: #111;
+  border-bottom: 1px solid #222;
+}
+
+#countText {
+  margin: 0;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* 更新ボタンの回転アニメーション修正版 */
+#refreshButton i,
+#refreshButton i::before {
+  display: inline-block;
+  transform-origin: center;
+}
+
+#refreshButton.refreshing i::before {
+  animation: refreshSpin 0.55s linear infinite;
+}
+
+#refreshButton.refreshing {
+  pointer-events: none;
+}
+
+#refreshButton:disabled {
+  opacity: 0.75;
+  cursor: default;
+}
+
+@keyframes refreshSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* 掘り返しボタンで今日の1本を再抽選した時の軽い反応 */
+.today-pick.rerolling {
+  opacity: 0.45;
+  transform: scale(0.985);
+}
+
+.today-pick {
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.header-logo-icon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+}
+
+.header-logo-text {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* お気に入り表示 */
+.favorite-badge {
+  display: inline-block;
+  margin-right: 4px;
+  color: #ffd166;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.filter-button[data-filter="favorite"].active {
+  background: #ffd166;
+  color: #111;
 }

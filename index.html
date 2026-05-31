@@ -22,13 +22,11 @@
   <body>
     <!-- 上部ヘッダー -->
     <header class="app-header">
-      <!-- ここを押すと設定画面を開く -->
-      <button id="settingsButton" class="logo-button">Clip Inbox</button>
+      <button id="settingsButton" class="logo-button">
+        <img class="header-logo-icon" src="apple-touch-icon.png" alt="" />
+        <span class="header-logo-text">Clip Inbox</span>
+      </button>
 
-      <!-- 未整理数 / 全体数を app.js から表示する -->
-      <p id="countText">0件</p>
-
-      <!-- ヘッダー右側の操作ボタン -->
       <div class="header-actions">
         <!-- 過去に保存した動画をランダムに掘り返す -->
         <button id="rediscoverButton" class="icon-button" aria-label="掘り返す">
@@ -45,6 +43,10 @@
         </button>
       </div>
     </header>
+
+    <section class="count-bar">
+      <p id="countText">0件</p>
+    </section>
 
     <!-- 検索パネル：右上検索アイコンで開閉 -->
     <section id="searchPanel" class="search-panel hidden">
@@ -106,6 +108,7 @@
         <button class="filter-button" data-filter="watched">視聴済み</button>
         <button class="filter-button" data-filter="expired">期限切れ</button>
         <button class="filter-button" data-filter="tagless">タグなし</button>
+        <button class="filter-button" data-filter="favorite">お気に入り</button>
         <button class="filter-button" data-filter="trash">ゴミ箱</button>
 
         <!-- Privateモード中だけ表示される -->
@@ -179,6 +182,10 @@
           <i class="bi bi-pencil"></i> 編集
         </button>
 
+        <button onclick="actionToggleFavorite()">
+          <i class="bi bi-star"></i> お気に入り切替
+        </button>
+
         <button onclick="actionTogglePrivate()">
           <i class="bi bi-eye-slash"></i> 非表示切替
         </button>
@@ -195,11 +202,11 @@
           <i class="bi bi-type"></i> タイトル編集
         </button>
 
-        <button onclick="actionRestoreClip()">
+        <button class="trash-only" onclick="actionRestoreClip()">
           <i class="bi bi-arrow-counterclockwise"></i> 復元
         </button>
 
-        <button class="danger" onclick="actionHardDeleteClip()">
+        <button class="danger trash-only" onclick="actionHardDeleteClip()">
           <i class="bi bi-x-circle"></i> 完全削除
         </button>
 

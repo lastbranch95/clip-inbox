@@ -16,6 +16,7 @@ let selectedClipUrl = null;
 let privateMode = false;
 let currentSort = "desc";
 let currentLabel = "all";
+let lastRediscoveryClipId = null;
 
 const DEFAULT_PRIVATE_PASSCODE = "0908";
 
@@ -254,7 +255,11 @@ async function saveClip() {
 
   // 同じURLが通常一覧にある場合は重複保存しない。
   // ゴミ箱にあるものは再保存できるように、!clip.isDeleted を条件にしている。
-  const exists = allClips.some((clip) => clip.url === url && !clip.isDeleted);
+  const duplicateKey = createDuplicateKey(url);
+
+  const exists = allClips.some((clip) => {
+    return createDuplicateKey(clip.url) === duplicateKey && !clip.isDeleted;
+  });
 
   if (exists) {
     alert("すでに保存済みです");
@@ -271,6 +276,7 @@ async function saveClip() {
     tags,
     status: reason ? "整理済み" : "未整理",
     isPrivate,
+    isFavorite: false,
     isDeleted: false,
     deletedAt: null,
     watchStatus: "あとで見る",
@@ -354,6 +360,10 @@ async function renderClips() {
     clips = clips.filter((clip) => getTagArray(clip.tags).length === 0);
   }
 
+  if (currentFilter === "favorite") {
+    clips = clips.filter((clip) => clip.isFavorite);
+  }
+
   if (currentLabel !== "all") {
     clips = clips.filter((clip) => getTagArray(clip.tags).includes(currentLabel));
   }
@@ -388,7 +398,7 @@ async function renderClips() {
         <div class="clip-main-row">
           <div>
             <div class="clip-title">
-              ${escapeHtml(clip.title)}
+              ${clip.isFavorite ? '<span class="favorite-badge">★</span> ' : ""}${escapeHtml(clip.title)}
               ${clip.isPrivate && privateMode ? '<span class="private-badge">非表示</span>' : ""}
               ${clip.isDeleted ? '<span class="private-badge">ゴミ箱</span>' : ""}
             </div>
@@ -645,6 +655,21 @@ async function actionEditTitle() {
   await renderClips();
 }
 
+async function actionToggleFavorite() {
+  if (selectedClipId === null) {
+    return;
+  }
+
+  const id = selectedClipId;
+  closeActionSheet();
+
+  const clip = await getClipById(id);
+  clip.isFavorite = !clip.isFavorite;
+
+  await updateClip(clip);
+  await refreshApp();
+}
+
 // ==================================================
 // URL解析・サムネイル・タイトル取得
 // ==================================================
@@ -673,6 +698,30 @@ function extractYouTubeId(url) {
     return null;
   } catch {
     return null;
+  }
+}
+
+// URL重複判定用のキーを作る。
+// YouTubeはURL形式や再生開始時間が違っても、動画IDが同じなら同じクリップ扱いにする。
+function createDuplicateKey(url) {
+  const youtubeId = extractYouTubeId(url);
+
+  if (youtubeId) {
+    return `youtube:${youtubeId}`;
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+
+    // ページ内アンカーは重複判定には使わない。
+    parsedUrl.hash = "";
+
+    // 末尾スラッシュの差だけなら同じURLとして扱う。
+    parsedUrl.pathname = parsedUrl.pathname.replace(/\/$/, "");
+
+    return parsedUrl.toString();
+  } catch {
+    return String(url).trim();
   }
 }
 
@@ -748,6 +797,7 @@ function createImportedClip(clip) {
     tags: normalizeTags(clip.tags || ""),
     status: clip.status || "未整理",
     isPrivate: clip.isPrivate || false,
+    isFavorite: clip.isFavorite || false,
     isDeleted: clip.isDeleted || false,
     deletedAt: clip.deletedAt || null,
     watchStatus: clip.watchStatus || "あとで見る",
@@ -772,19 +822,23 @@ async function importClipArray(clips, completeMessage) {
   }
 
   const existingClips = await getAllClips();
-  const existingUrls = new Set(existingClips.map((clip) => clip.url));
+  const existingUrls = new Set(
+    existingClips.map((clip) => createDuplicateKey(clip.url))
+  );
 
   let importedCount = 0;
   let skippedCount = 0;
 
   for (const clip of clips) {
-    if (existingUrls.has(clip.url)) {
+    const duplicateKey = createDuplicateKey(clip.url);
+
+    if (existingUrls.has(duplicateKey)) {
       skippedCount++;
       continue;
     }
 
     await addClip(createImportedClip(clip));
-    existingUrls.add(clip.url);
+    existingUrls.add(duplicateKey);
     importedCount++;
   }
 
@@ -1095,29 +1149,78 @@ function isStaleClip(clip) {
   return diffDays >= 7;
 }
 
-function pickRediscoveryClip(clips) {
-  const visibleClips = privateMode
-    ? clips
-    : clips.filter((clip) => !clip.isPrivate && !clip.isDeleted);
+function pickRediscoveryClip(clips, shouldAvoidLast = false) {
+  const visibleClips = clips.filter((clip) => {
+    if (clip.isDeleted) {
+      return false;
+    }
 
-  const candidates = visibleClips.filter((clip) => {
-    return (
-      (clip.watchCount || 0) === 0 &&
-      clip.reason &&
-      getDaysSince(clip.createdAt) >= 3
-    );
+    if (!privateMode && clip.isPrivate) {
+      return false;
+    }
+
+    return true;
   });
 
-  const pool =
-    candidates.length > 0
-      ? candidates
-      : visibleClips.filter((clip) => (clip.watchCount || 0) === 0);
-
-  if (pool.length === 0) {
+  if (visibleClips.length === 0) {
     return null;
   }
 
-  return pool[Math.floor(Math.random() * pool.length)];
+  const scoredClips = visibleClips.map((clip) => {
+    let score = 0;
+
+    const days = getDaysSince(clip.createdAt);
+    const watchCount = clip.watchCount || 0;
+    const hasReason = !!clip.reason;
+    const hasTags = getTagArray(clip.tags).length > 0;
+
+    // 未視聴を強めに優先する。
+    if (watchCount === 0) {
+      score += 30;
+    }
+
+    // 保存から日数が経っているほど少し優先する。
+    score += Math.min(days, 30);
+
+    // 理由やタグがあるものは「昔の自分の意図」が残っているので優先する。
+    if (hasReason) {
+      score += 12;
+    }
+
+    if (hasTags) {
+      score += 5;
+    }
+
+    // お気に入りは、再発見価値が高いので少し優先する。
+    if (clip.isFavorite) {
+      score += 18;
+    }
+
+    // 最近見たものは少し下げる。
+    if (clip.lastWatchedAt && getDaysSince(clip.lastWatchedAt) <= 3) {
+      score -= 20;
+    }
+
+    // 掘り返しボタンで連続再抽選したとき、直前と同じものが出にくいようにする。
+    if (shouldAvoidLast && clip.id === lastRediscoveryClipId) {
+      score -= 100;
+    }
+
+    return {
+      clip,
+      score
+    };
+  });
+
+  scoredClips.sort((a, b) => b.score - a.score);
+
+  // 上位5件からランダムにして、毎回まったく同じになりすぎないようにする。
+  const topClips = scoredClips.slice(0, Math.min(5, scoredClips.length));
+  const picked = topClips[Math.floor(Math.random() * topClips.length)].clip;
+
+  lastRediscoveryClipId = picked.id;
+
+  return picked;
 }
 
 async function renderTodayPick(allClips) {
@@ -1149,23 +1252,50 @@ async function renderTodayPick(allClips) {
 
 async function rediscoverRandomClip() {
   const clips = await getAllClips();
-  const clip = pickRediscoveryClip(clips);
+  const section = document.getElementById("todayPickSection");
+  const clip = pickRediscoveryClip(clips, true);
 
   if (!clip) {
     alert("掘り返せるクリップがまだありません");
     return;
   }
 
-  openActionSheet(clip.id, clip.url);
+  // ボタンを押した手応えを出すため、一瞬だけ薄くしてから中身を差し替える。
+  section.classList.add("rerolling");
+
+  await wait(120);
+
+  section.classList.remove("hidden");
+  section.innerHTML = `
+    <div class="today-pick-label">今日の1本</div>
+
+    <a href="${escapeHtml(clip.url)}" target="_blank" rel="noopener noreferrer" onclick="countOnly(${clip.id}, true)">
+      <img class="thumbnail" src="${clip.thumbnailUrl}" alt="thumbnail">
+    </a>
+
+    <div class="today-pick-title">${escapeHtml(clip.title)}</div>
+
+    <div class="today-pick-reason">
+      ${escapeHtml(clip.reason || "理由未入力")}
+      ・保存から${getDaysSince(clip.createdAt)}日
+    </div>
+  `;
+
+  section.classList.remove("rerolling");
 }
 
 // ==================================================
 // 三点メニュー
 // ==================================================
-function openActionSheet(id, url) {
+async function openActionSheet(id, url) {
   selectedClipId = id;
   selectedClipUrl = url;
-  document.getElementById("actionSheet").classList.remove("hidden");
+
+  const actionSheet = document.getElementById("actionSheet");
+  const clip = await getClipById(id);
+
+  actionSheet.classList.toggle("trash-mode", !!clip?.isDeleted);
+  actionSheet.classList.remove("hidden");
 }
 
 function closeActionSheet() {
