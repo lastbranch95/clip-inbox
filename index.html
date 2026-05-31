@@ -19,13 +19,20 @@
     />
   </head>
 
-  <body>
+    <body>
     <!-- 上部ヘッダー -->
     <header class="app-header">
-      <button id="settingsButton" class="logo-button">
-        <img class="header-logo-icon" src="apple-touch-icon.png" alt="" />
-        <span class="header-logo-text">Clip Inbox</span>
-      </button>
+      <div class="header-left">
+        <button id="settingsButton" class="logo-button">
+          <img class="header-logo-icon" src="apple-touch-icon.png" alt="" />
+          <span class="header-logo-text">Clip Inbox</span>
+        </button>
+
+        <section id="privateModeLabel" class="private-mode-label hidden">
+          <span>Private</span>
+          <button id="privateModeOffButton">OFF</button>
+        </section>
+      </div>
 
       <div class="header-actions">
         <!-- 過去に保存した動画をランダムに掘り返す -->
@@ -53,11 +60,7 @@
       <input id="searchInput" type="text" placeholder="検索" />
     </section>
 
-    <!-- Private表示中だけ出すラベル -->
-    <section id="privateModeLabel" class="private-mode-label hidden">
-      <span>Private表示中</span>
-      <button id="privateModeOffButton">終了</button>
-    </section>
+   
 
     <!-- 設定パネル：普段は非表示 -->
     <section id="settingsPanel" class="settings-panel hidden">
