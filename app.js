@@ -28,7 +28,7 @@ window.addEventListener("load", async () => {
   // 設定・JSONバックアップ関連
   on("privateModeOffButton", "click", turnOffPrivateMode);
   on("pasteJsonButton", "click", importClipsFromPaste);
-  on("refreshButton", "click", refreshApp);
+  on("refreshButton", "click", refreshWithAnimation);
   on("resetAllButton", "click", resetAllData);
 
   on("sortSelect", "change", (event) => {
@@ -119,6 +119,41 @@ function on(id, eventName, handler) {
 async function refreshApp() {
   await renderTagOptions();
   await renderClips();
+}
+
+// 更新ボタン用：回転アニメーションを見せながら再描画する
+async function refreshWithAnimation() {
+  const refreshButton = document.getElementById("refreshButton");
+
+  if (!refreshButton) {
+    await refreshApp();
+    return;
+  }
+
+  // 連打防止。更新中に何度押しても処理を増やさない。
+  if (refreshButton.classList.contains("refreshing")) {
+    return;
+  }
+
+  refreshButton.classList.add("refreshing");
+  refreshButton.disabled = true;
+
+  try {
+    await refreshApp();
+
+    // 更新が一瞬で終わると回転が見えないので、最低限だけ表示する。
+    await wait(450);
+  } finally {
+    refreshButton.classList.remove("refreshing");
+    refreshButton.disabled = false;
+  }
+}
+
+// 指定ミリ秒だけ待つ
+function wait(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 // ==================================================

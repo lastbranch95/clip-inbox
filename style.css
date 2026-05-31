@@ -595,3 +595,33 @@ body:has(.action-sheet:not(.hidden)) .fab {
 .json-output-actions button:nth-child(2) {
   background: #4da3ff;
 }
+/* スマホでボタン連打時に拡大・選択されるのを防ぐ */
+button,
+.icon-button,
+.menu-button,
+.fab {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 更新ボタンの回転アニメーション */
+#refreshButton.refreshing i {
+  animation: refreshSpin 0.55s linear infinite;
+}
+
+#refreshButton:disabled {
+  opacity: 0.75;
+  cursor: default;
+}
+
+@keyframes refreshSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
