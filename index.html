@@ -7,7 +7,7 @@
     <title>Clip Inbox</title>
 
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
     <meta name="theme-color" content="#111111" />
 
     <link rel="stylesheet" href="style.css" />
@@ -19,12 +19,12 @@
     />
   </head>
 
-    <body>
+  <body>
     <!-- 上部ヘッダー -->
     <header class="app-header">
       <div class="header-left">
         <button id="settingsButton" class="logo-button">
-          <img class="header-logo-icon" src="apple-touch-icon.png" alt="" />
+          <img class="header-logo-icon" src="assets/apple-touch-icon.png" alt="" />
           <span class="header-logo-text">Clip Inbox</span>
         </button>
 
@@ -60,11 +60,26 @@
       <input id="searchInput" type="text" placeholder="検索" />
     </section>
 
-   
-
     <!-- 設定パネル：普段は非表示 -->
     <section id="settingsPanel" class="settings-panel hidden">
       <h2>設定</h2>
+
+      <section class="sync-panel">
+        <h3>同期</h3>
+        <p id="syncStatusText">保存先を確認中...</p>
+
+        <input id="authEmailInput" type="email" placeholder="メールアドレス" />
+        <input id="authPasswordInput" type="password" placeholder="パスワード" />
+
+        <button id="signInButton">Supabaseにログイン</button>
+        <button id="signOutButton" class="hidden">ログアウト</button>
+        <button id="importLocalToCloudButton" class="hidden">
+          この端末の旧データをクラウドへ移行
+        </button>
+
+        <p class="sync-note">Supabase未設定の間は、この端末のIndexedDBに保存します。</p>
+      </section>
+
       <button id="copyJsonButton">JSONをコピー</button>
       <button id="exportButton">JSON書き出し</button>
 
@@ -271,6 +286,7 @@
       </div>
     </section>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
   </body>
 </html>

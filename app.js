@@ -9,7 +9,18 @@
 const DB_NAME = "clipInboxDb";
 const STORE_NAME = "clips";
 
+// ==================================================
+// Supabase設定
+// ==================================================
+// Daily Coreと同じSupabaseプロジェクトのURLとPublishable/anon keyを入れる。
+// 注意：service_role / secret key は絶対にここへ入れない。
+const SUPABASE_URL = "https://hopbmcqdthszulqegqlq.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_AWDBKP4edc2ToZUQJFi8wQ_3dCQ_b0k";
+const SUPABASE_TABLE_NAME = "clip_items";
+
 let db;
+let supabaseClient = null;
+let currentUser = null;
 let currentFilter = "all";
 let selectedClipId = null;
 let selectedClipUrl = null;
@@ -20,17 +31,136 @@ let lastRediscoveryClipId = null;
 
 const DEFAULT_PRIVATE_PASSCODE = "0908";
 
+// Supabaseが未設定の間は旧IndexedDBで動かす。設定後はログインしてクラウド保存に切り替わる。
+function isSupabaseConfigured() {
+  return (
+    SUPABASE_URL &&
+    SUPABASE_PUBLISHABLE_KEY &&
+    !SUPABASE_URL.includes("YOUR_PROJECT_ID") &&
+    !SUPABASE_PUBLISHABLE_KEY.includes("YOUR_SUPABASE") &&
+    window.supabase
+  );
+}
+
+function shouldUseSupabase() {
+  return !!(supabaseClient && currentUser);
+}
+
+function initializeSupabaseClient() {
+  if (!isSupabaseConfigured()) {
+    return;
+  }
+
+  supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
+}
+
+function setSyncStatus(message) {
+  const element = document.getElementById("syncStatusText");
+
+  if (!element) {
+    return;
+  }
+
+  element.textContent = message;
+}
+
+async function refreshAuthState() {
+  if (!supabaseClient) {
+    setSyncStatus("保存先：この端末のみ（Supabase未設定）");
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.getUser();
+
+  if (error || !data?.user) {
+    currentUser = null;
+    setSyncStatus("保存先：Supabase / 未ログイン");
+  } else {
+    currentUser = data.user;
+    setSyncStatus(`保存先：Supabase / ログイン中 ${currentUser.email || ""}`);
+  }
+
+  updateAuthPanel();
+}
+
+function updateAuthPanel() {
+  const signedInOnlyIds = ["signOutButton", "importLocalToCloudButton"];
+  const signedOutOnlyIds = ["signInButton"];
+
+  signedInOnlyIds.forEach((id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.classList.toggle("hidden", !currentUser);
+    }
+  });
+
+  signedOutOnlyIds.forEach((id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.classList.toggle("hidden", !!currentUser || !supabaseClient);
+    }
+  });
+}
+
+async function signInToSupabase() {
+  if (!supabaseClient) {
+    alert("Supabase設定がまだ入っていません。app.js の SUPABASE_URL と SUPABASE_PUBLISHABLE_KEY を設定してください。");
+    return;
+  }
+
+  const email = document.getElementById("authEmailInput").value.trim();
+  const password = document.getElementById("authPasswordInput").value;
+
+  if (!email || !password) {
+    alert("メールアドレスとパスワードを入力して");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    alert(`ログイン失敗：${error.message}`);
+    return;
+  }
+
+  document.getElementById("authPasswordInput").value = "";
+  await refreshAuthState();
+  await refreshApp();
+}
+
+async function signOutFromSupabase() {
+  if (!supabaseClient) {
+    return;
+  }
+
+  await supabaseClient.auth.signOut();
+  currentUser = null;
+  await refreshAuthState();
+  await refreshApp();
+}
+
 // ==================================================
 // 初期化：画面読み込み後にDBを開き、各ボタンへイベントを登録する
 // ==================================================
 window.addEventListener("load", async () => {
   db = await openDatabase();
+  initializeSupabaseClient();
+  await refreshAuthState();
 
   // 設定・JSONバックアップ関連
   on("privateModeOffButton", "click", turnOffPrivateMode);
   on("pasteJsonButton", "click", importClipsFromPaste);
   on("refreshButton", "click", refreshWithAnimation);
   on("resetAllButton", "click", resetAllData);
+  on("signInButton", "click", signInToSupabase);
+  on("signOutButton", "click", signOutFromSupabase);
+  on("importLocalToCloudButton", "click", importLocalIndexedDbToSupabase);
 
   on("sortSelect", "change", (event) => {
     currentSort = event.target.value;
@@ -158,7 +288,7 @@ function wait(ms) {
 }
 
 // ==================================================
-// IndexedDB操作
+// 保存操作：Supabase設定済み＆ログイン済みならクラウド、未設定ならIndexedDB
 // ==================================================
 function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -182,7 +312,7 @@ function openDatabase() {
   });
 }
 
-function addClip(clip) {
+function addClipToIndexedDb(clip) {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readwrite");
     const store = transaction.objectStore(STORE_NAME);
@@ -193,7 +323,7 @@ function addClip(clip) {
   });
 }
 
-function getAllClips() {
+function getAllClipsFromIndexedDb() {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readonly");
     const store = transaction.objectStore(STORE_NAME);
@@ -204,18 +334,18 @@ function getAllClips() {
   });
 }
 
-function getClipById(id) {
+function getClipByIdFromIndexedDb(id) {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readonly");
     const store = transaction.objectStore(STORE_NAME);
-    const request = store.get(id);
+    const request = store.get(Number(id));
 
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 }
 
-function updateClip(clip) {
+function updateClipInIndexedDb(clip) {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readwrite");
     const store = transaction.objectStore(STORE_NAME);
@@ -226,15 +356,195 @@ function updateClip(clip) {
   });
 }
 
-function hardDeleteClip(id) {
+function hardDeleteClipFromIndexedDb(id) {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readwrite");
     const store = transaction.objectStore(STORE_NAME);
-    const request = store.delete(id);
+    const request = store.delete(Number(id));
 
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
+}
+
+function rowToClip(row) {
+  return {
+    id: row.id,
+    url: row.url || "",
+    title: row.title || createTitleFromUrl(row.url || ""),
+    thumbnailUrl: row.thumbnail_url || createThumbnailUrl(row.url || ""),
+    reason: row.reason || "",
+    tags: row.tags || "",
+    status: row.status || "未整理",
+    isPrivate: !!row.is_private,
+    isFavorite: !!row.is_favorite,
+    isDeleted: !!row.deleted_at,
+    deletedAt: row.deleted_at || null,
+    watchStatus: row.watch_status || "あとで見る",
+    watchCount: row.watch_count || 0,
+    lastWatchedAt: row.last_watched_at || null,
+    watchDueType: row.watch_due_type || "none",
+    watchDueAt: row.watch_due_at || null,
+    createdAt: row.created_at || new Date().toISOString(),
+    updatedAt: row.updated_at || null
+  };
+}
+
+function clipToRow(clip) {
+  const row = {
+    url: clip.url || "",
+    duplicate_key: createDuplicateKey(clip.url || ""),
+    title: clip.title || createTitleFromUrl(clip.url || ""),
+    thumbnail_url: clip.thumbnailUrl || createThumbnailUrl(clip.url || ""),
+    reason: clip.reason || "",
+    tags: normalizeTags(clip.tags || ""),
+    status: clip.status || "未整理",
+    is_private: !!clip.isPrivate,
+    is_favorite: !!clip.isFavorite,
+    watch_status: clip.watchStatus || "あとで見る",
+    watch_count: clip.watchCount || 0,
+    last_watched_at: clip.lastWatchedAt || null,
+    watch_due_type: clip.watchDueType || "none",
+    watch_due_at: clip.watchDueAt || null,
+    deleted_at: clip.isDeleted ? (clip.deletedAt || new Date().toISOString()) : null,
+    updated_at: new Date().toISOString()
+  };
+
+  if (currentUser) {
+    row.user_id = currentUser.id;
+  }
+
+  if (clip.createdAt) {
+    row.created_at = clip.createdAt;
+  }
+
+  return row;
+}
+
+async function addClip(clip) {
+  if (!shouldUseSupabase()) {
+    return addClipToIndexedDb(clip);
+  }
+
+  const { error } = await supabaseClient
+    .from(SUPABASE_TABLE_NAME)
+    .insert(clipToRow(clip));
+
+  if (error) {
+    alert(`保存失敗：${error.message}`);
+    throw error;
+  }
+}
+
+async function getAllClips() {
+  if (!shouldUseSupabase()) {
+    return getAllClipsFromIndexedDb();
+  }
+
+  const { data, error } = await supabaseClient
+    .from(SUPABASE_TABLE_NAME)
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    alert(`取得失敗：${error.message}`);
+    throw error;
+  }
+
+  return (data || []).map(rowToClip);
+}
+
+async function getClipById(id) {
+  if (!shouldUseSupabase()) {
+    return getClipByIdFromIndexedDb(id);
+  }
+
+  const { data, error } = await supabaseClient
+    .from(SUPABASE_TABLE_NAME)
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    alert(`取得失敗：${error.message}`);
+    throw error;
+  }
+
+  return rowToClip(data);
+}
+
+async function updateClip(clip) {
+  if (!shouldUseSupabase()) {
+    return updateClipInIndexedDb(clip);
+  }
+
+  const { error } = await supabaseClient
+    .from(SUPABASE_TABLE_NAME)
+    .update(clipToRow(clip))
+    .eq("id", clip.id);
+
+  if (error) {
+    alert(`更新失敗：${error.message}`);
+    throw error;
+  }
+}
+
+async function hardDeleteClip(id) {
+  if (!shouldUseSupabase()) {
+    return hardDeleteClipFromIndexedDb(id);
+  }
+
+  const { error } = await supabaseClient
+    .from(SUPABASE_TABLE_NAME)
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    alert(`完全削除失敗：${error.message}`);
+    throw error;
+  }
+}
+
+async function importLocalIndexedDbToSupabase() {
+  if (!shouldUseSupabase()) {
+    alert("Supabaseにログインしてから実行して");
+    return;
+  }
+
+  const localClips = await getAllClipsFromIndexedDb();
+
+  if (localClips.length === 0) {
+    alert("この端末のIndexedDBに移行するクリップがありません");
+    return;
+  }
+
+  const ok = confirm(`${localClips.length}件のローカルClipをSupabaseへ移行します。重複URLはスキップします。`);
+
+  if (!ok) {
+    return;
+  }
+
+  const cloudClips = await getAllClips();
+  const existingKeys = new Set(cloudClips.map((clip) => createDuplicateKey(clip.url)));
+  let importedCount = 0;
+  let skippedCount = 0;
+
+  for (const clip of localClips) {
+    const duplicateKey = createDuplicateKey(clip.url);
+
+    if (existingKeys.has(duplicateKey)) {
+      skippedCount++;
+      continue;
+    }
+
+    const normalized = createImportedClip(clip);
+    await addClip(normalized);
+    existingKeys.add(duplicateKey);
+    importedCount++;
+  }
+
+  await refreshApp();
+  alert(`移行完了\n追加：${importedCount}件\n重複スキップ：${skippedCount}件`);
 }
 
 // ==================================================
@@ -481,6 +791,10 @@ function openAndCount(id, url) {
 
 async function countOnly(id, shouldRender = false) {
   const clip = await getClipById(id);
+
+  if (!clip) {
+    return;
+  }
 
   clip.watchCount = (clip.watchCount || 0) + 1;
   clip.lastWatchedAt = new Date().toISOString();
@@ -1037,6 +1351,22 @@ async function resetAllData() {
     return;
   }
 
+  if (shouldUseSupabase()) {
+    const { error } = await supabaseClient
+      .from(SUPABASE_TABLE_NAME)
+      .delete()
+      .eq("user_id", currentUser.id);
+
+    if (error) {
+      alert(`全削除失敗：${error.message}`);
+      return;
+    }
+
+    await refreshApp();
+    alert("Supabase上の全データを削除しました");
+    return;
+  }
+
   const transaction = db.transaction(STORE_NAME, "readwrite");
   const store = transaction.objectStore(STORE_NAME);
 
@@ -1044,7 +1374,7 @@ async function resetAllData() {
 
   transaction.oncomplete = async () => {
     await refreshApp();
-    alert("全データを削除しました");
+    alert("この端末の全データを削除しました");
   };
 }
 
