@@ -1037,3 +1037,41 @@ body:has(#privateModeLabel:not(.hidden)):has(.search-panel:not(.hidden)) main {
     66px
   );
 }
+/* ==================================================
+   Supabase同期パネル
+   ================================================== */
+.sync-panel {
+  margin: 12px 0 16px;
+  padding: 12px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sync-panel h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.sync-panel input {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 6px 0;
+}
+
+.sync-panel button {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.sync-note {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+#syncStatusText {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
